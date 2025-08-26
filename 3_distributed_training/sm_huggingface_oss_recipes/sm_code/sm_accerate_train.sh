@@ -16,7 +16,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NUM_GPUS=""
 CONFIG_PATH=""
 REQUIREMENTS_FILE="./requirements.txt"
-ACCELERATE_CONFIG="accelerate/zero3.yaml"
+ACCELERATE_CONFIG="accelerate_configs/ds_zero3.yaml"
 TRAINING_SCRIPT="run_sft.py"
 
 # Color codes for output
@@ -209,10 +209,10 @@ main() {
     validate_inputs
     
     # Check accelerate installation
-    check_accelerate_installation
+    # check_accelerate_installation
     
     # Install dependencies
-    install_dependencies
+    # install_dependencies
     
     # Launch training
     launch_training

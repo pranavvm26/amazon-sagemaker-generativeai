@@ -19,7 +19,7 @@ from typing import Optional, Tuple, Dict, Any
 
 import torch
 from datasets import load_dataset, Dataset
-from peft import AutoPeftModelForCausalLM
+from peft import AutoPeftModelForCausalLM, PeftModel, PeftConfig
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -27,7 +27,7 @@ from transformers import (
     Mxfp4Config,
     PreTrainedModel,
     PreTrainedTokenizer,
-    set_seed,
+    set_seed
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import is_liger_kernel_available
@@ -36,7 +36,7 @@ from trl import (
     TrlParser,
     ModelConfig,
     SFTConfig,
-    get_peft_config,
+    get_peft_config
 )
 
 if is_liger_kernel_available():
@@ -79,6 +79,9 @@ class ScriptArguments:
     
     mxfp4: bool = False
     """Whether to use MXFP4 quantization instead of standard 4-bit quantization."""
+
+    use_liger: bool = False
+    """Whether to use LigerKernel over AutoClass for loading model."""
 
 def get_checkpoint_path(training_args: SFTConfig) -> Optional[str]:
     """
@@ -147,50 +150,6 @@ def setup_model_for_spectrum(model: PreTrainedModel, spectrum_config_path: str) 
     return model
 
 
-def merge_adapter_and_save_model(
-    model_path_or_id: str, 
-    save_dir: str, 
-    save_tokenizer: bool = True
-) -> None:
-    """
-    Merge PEFT adapter with base model and save the merged model.
-    
-    Args:
-        model_path_or_id: Path to PEFT model or HuggingFace model identifier
-        save_dir: Directory to save the merged model
-        save_tokenizer: Whether to also save the tokenizer
-        
-    Raises:
-        Exception: If model loading, merging, or saving fails
-    """
-    try:
-        logger.info(f"Loading PEFT model from {model_path_or_id}")
-        model = AutoPeftModelForCausalLM.from_pretrained(
-            model_path_or_id,
-            low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
-        )
-        
-        logger.info("Merging adapter with base model")
-        merged_model = model.merge_and_unload()
-        
-        logger.info(f"Saving merged model to {save_dir}")
-        os.makedirs(save_dir, exist_ok=True)
-        merged_model.save_pretrained(
-            save_dir, 
-            safe_serialization=True, 
-            max_shard_size="4GB"
-        )
-
-        if save_tokenizer:
-            logger.info(f"Saving tokenizer to {save_dir}")
-            tokenizer = AutoTokenizer.from_pretrained(model_path_or_id)
-            tokenizer.save_pretrained(save_dir)
-            
-    except Exception as e:
-        logger.error(f"Failed to merge and save model: {e}")
-        raise 
-
 def load_datasets(script_args: ScriptArguments) -> Tuple[Dataset, Dataset]:
     """
     Load training and evaluation datasets based on script arguments.
@@ -214,14 +173,10 @@ def load_datasets(script_args: ScriptArguments) -> Tuple[Dataset, Dataset]:
             
             # Split dataset (hardcoded split for JSONL files)
             total_samples = len(dataset)
-            if total_samples < 1000:
-                logger.warning(f"Dataset has only {total_samples} samples, using 90/10 split")
-                split_idx = int(0.9 * total_samples)
-                train_dataset = dataset.select(range(split_idx))
-                eval_dataset = dataset.select(range(split_idx, total_samples))
-            else:
-                train_dataset = dataset.select(range(900))
-                eval_dataset = dataset.select(range(900, 1000))
+            logger.warning(f"Dataset has only {total_samples} samples, using 90/10 split")
+            split_idx = int(0.9 * total_samples)
+            train_dataset = dataset.select(range(split_idx))
+            eval_dataset = dataset.select(range(split_idx, total_samples))
         else:
             # Load HuggingFace dataset
             logger.info(f"Loading HuggingFace dataset: {dataset_path}")
@@ -363,7 +318,7 @@ def load_model(model_args: ModelConfig, training_args: SFTConfig, script_args: S
         model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     else:
         # Use Liger kernel if available and requested
-        if training_args.use_liger and is_liger_kernel_available():
+        if script_args.use_liger and is_liger_kernel_available():
             logger.info("Loading model with Liger kernel optimization")
             model = AutoLigerKernelForCausalLM.from_pretrained(model_name, **model_kwargs)
         else:
@@ -430,38 +385,22 @@ def save_peft_model(trainer: SFTTrainer, training_args: SFTConfig, model_args: M
         training_args: Training configuration
         model_args: Model configuration
     """
+    final_model_dir = get_model_save_directory(model_args.model_name_or_path)
+    final_model_dir = os.path.join(final_model_dir, "peft")
+
     logger.info("Saving PEFT model")
     
-    # Save adapter to checkpoint directory
-    checkpoint_dir = os.path.join(training_args.output_dir, "last_checkpoint")
-    trainer.save_model(checkpoint_dir)
-    logger.info(f"PEFT adapter saved to {checkpoint_dir}")
+    # Save adapter to final model dir directory
+    trainer.save_model(final_model_dir)
+    logger.info(f"PEFT adapter saved to {final_model_dir}")
     
     # Wait for all processes
     if hasattr(training_args, 'distributed_state'):
         training_args.distributed_state.wait_for_everyone()
     
     # Save tokenizer
-    trainer.tokenizer.save_pretrained(checkpoint_dir)
-    logger.info(f"Tokenizer saved to {checkpoint_dir}")
-    
-    # Create model card on main process
-    if trainer.accelerator.is_main_process:
-        trainer.create_model_card({'tags': ['sagemaker', 'hf-oss']})
-    
-    # Clean up GPU memory
-    del trainer.model
-    torch.cuda.empty_cache()
-    
-    # Merge adapter and save final model
-    final_model_dir = get_model_save_directory(model_args.model_name_or_path)
-    logger.info(f"Merging adapter and saving final model to {final_model_dir}")
-    
-    merge_adapter_and_save_model(
-        model_path_or_id=checkpoint_dir,
-        save_dir=final_model_dir,
-        save_tokenizer=True
-    )
+    trainer.tokenizer.save_pretrained(final_model_dir)
+    logger.info(f"Tokenizer saved to {final_model_dir}")
 
 
 def save_full_model(trainer: SFTTrainer, training_args: SFTConfig, model_args: ModelConfig) -> None:
@@ -487,10 +426,6 @@ def save_full_model(trainer: SFTTrainer, training_args: SFTConfig, model_args: M
     # Save tokenizer (fix bug: was saving to wrong directory)
     trainer.tokenizer.save_pretrained(final_model_dir)
     logger.info(f"Tokenizer saved to {final_model_dir}")
-    
-    # Create model card on main process
-    if trainer.accelerator.is_main_process:
-        trainer.create_model_card({'tags': ['sagemaker', 'gpt-oss']})
 
 
 def train_function(model_args: ModelConfig, script_args: ScriptArguments, training_args: SFTConfig) -> None:
@@ -536,7 +471,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,  # Add eval dataset
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         peft_config=peft_config,
     )
     
