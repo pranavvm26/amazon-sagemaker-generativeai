@@ -30,16 +30,41 @@ This repository contains a unified Supervised Fine-Tuning (SFT) framework that s
 
 ## Supported Models
 
-### Text Generation Models
-
 | Model | LoRA | Spectrum | Full | Notes |
 |-------|------|----------|------|-------|
+| **Meta (Llama) - Text Generation** |
 | **meta-llama/Meta-Llama-3-8B-Instruct** | ✅ [QLoRA](sm_code/oss-recipes/meta-llama--Meta-Llama-3-8B-Instruct-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/meta-llama--Meta-Llama-3-8B-Instruct-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/meta-llama--Meta-Llama-3-8B-Instruct-Vanilla-Full.yaml) | Flash Attention 2, 4-bit quantization |
+| **Meta (Llama) - Multi-Modal** |
+| **meta-llama/Llama-4-Scout-17B-16E-Instruct** | ✅ [QLoRA](sm_code/oss-recipes/meta-llama--Llama-4-Scout-17B-16E-Instruct-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Vision-language model |
+| **meta-llama/Llama-4-Maverick-17B-128E-Instruct** | ✅ [QLoRA](sm_code/oss-recipes/meta-llama--Llama-4-Maverick-17B-128E-Instruct-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Advanced multimodal capabilities |
+| **Mistral AI - Text Generation** |
 | **mistralai/Mistral-7B-Instruct-v0.3** | ✅ [QLoRA](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-Full.yaml) | Flash Attention 2, optimized for efficiency |
+| **OpenAI - Text Generation** |
 | **openai/gpt-oss-20b** | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-20b-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | MXFP4 quantization, Flash Attention 3 |
-
-### Multi-Modal Models
-*Coming Soon* - Support for vision-language models and multi-modal architectures
+| **openai/gpt-oss-120b** | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-120b-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Large scale model, MXFP4 quantization |
+| **Qwen (Alibaba) - Text Generation** |
+| **Qwen/Qwen3-8B** | ✅ [QLoRA](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-Full.yaml) | Flash Attention 2, 4-bit quantization |
+| **Qwen/Qwen3-30B-A3B-Thinking-25073** | ✅ [QLoRA](sm_code/oss-recipes/Qwen--Qwen3-30B-A3B-Thinking-25073-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/Qwen--Qwen3-30B-A3B-Thinking-25073-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/Qwen--Qwen3-30B-A3B-Thinking-25073-Vanilla-Full.yaml) | Large model, reasoning capabilities |
+| **Qwen (Alibaba) - Multi-Modal** |
+| **Qwen/Qwen2.5-Omni-7B** | ✅ [QLoRA](sm_code/oss-recipes/Qwen--Qwen2.5-Omni-7B-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Omni-modal capabilities |
+| **DeepSeek - Text Generation** |
+| **deepseek-ai/DeepSeek-V3** | ✅ [QLoRA](sm_code/oss-recipes/deepseek-ai--DeepSeek-V3-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | MXFP4 quantization, large scale model |
+| **deepseek-ai/DeepSeek-R1-Distill-Qwen-14B** | ✅ [QLoRA](sm_code/oss-recipes/deepseek-ai--DeepSeek-R1-Distill-Qwen-14B-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/deepseek-ai--DeepSeek-R1-Distill-Qwen-14B-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/deepseek-ai--DeepSeek-R1-Distill-Qwen-14B-Vanilla-Full.yaml) | Reasoning model, distilled from R1 |
+| **DeepSeek - Multi-Modal** |
+| **deepseek-ai/Janus-Pro-7B** | ✅ [QLoRA](sm_code/oss-recipes/deepseek-ai--Janus-Pro-7B-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Vision-language model |
+| **Google (Gemma) - Text Generation** |
+| **google/gemma-7b-it** | ✅ [QLoRA](sm_code/oss-recipes/google--gemma-7b-it-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/google--gemma-7b-it-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/google--gemma-7b-it-Vanilla-Full.yaml) | Flash Attention 2, instruction tuned |
+| **google/gemma-3-27b-it** | ✅ [QLoRA](sm_code/oss-recipes/google--gemma-3-27b-it-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/google--gemma-3-27b-it-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/google--gemma-3-27b-it-Vanilla-Full.yaml) | Large Gemma model, enhanced capabilities |
+| **Google (Gemma) - Multi-Modal** |
+| **google/gemma-3n-E4B-it** | ✅ [QLoRA](sm_code/oss-recipes/google--gemma-3n-E4B-it-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Multimodal Gemma variant |
+| **Microsoft (Phi) - Text Generation** |
+| **microsoft/Phi-4-reasoning** | ✅ [QLoRA](sm_code/oss-recipes/microsoft--Phi-4-reasoning-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/microsoft--Phi-4-reasoning-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/microsoft--Phi-4-reasoning-Vanilla-Full.yaml) | Reasoning-focused model |
+| **microsoft/Phi-4-mini-instruct** | ✅ [QLoRA](sm_code/oss-recipes/microsoft--Phi-4-mini-instruct-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/microsoft--Phi-4-mini-instruct-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/microsoft--Phi-4-mini-instruct-Vanilla-Full.yaml) | Compact, efficient model |
+| **Microsoft (Phi) - Multi-Modal** |
+| **microsoft/Phi-4-multimodal-instruct** | ✅ [QLoRA](sm_code/oss-recipes/microsoft--Phi-4-multimodal-instruct-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Vision-language Phi model |
+| **TII (Falcon) - Text Generation** |
+| **tiiuae/Falcon3-7B-Instruct** | ✅ [QLoRA](sm_code/oss-recipes/tiiuae--Falcon3-7B-Instruct-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/tiiuae--Falcon3-7B-Instruct-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/tiiuae--Falcon3-7B-Instruct-Vanilla-Full.yaml) | Latest Falcon generation |
+| **tiiuae/Falcon3-10B-Instruct** | ✅ [QLoRA](sm_code/oss-recipes/tiiuae--Falcon3-10B-Instruct-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/tiiuae--Falcon3-10B-Instruct-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/tiiuae--Falcon3-10B-Instruct-Vanilla-Full.yaml) | Enhanced Falcon model |
 
 ## Quick Start
 
@@ -205,11 +230,14 @@ dataset_test_split: "test_sft"
 
 ### Memory Usage Guidelines
 
-| Model Size | Recommended Instance | Training Method | Batch Size |
-|------------|---------------------|-----------------|------------|
-| 7B | ml.g5.2xlarge | LoRA + 4-bit | 8 |
-| 8B | ml.g5.4xlarge | LoRA + 4-bit | 4 |
-| 20B | ml.g5.12xlarge | LoRA + MXFP4 | 2 |
+| Model Size | Recommended Instance | Training Method | Batch Size | Example Models |
+|------------|---------------------|-----------------|------------|----------------|
+| 7B | ml.g5.2xlarge | LoRA + 4-bit | 8 | Mistral-7B, Gemma-7B, Falcon3-7B, Qwen2.5-Omni-7B |
+| 8B | ml.g5.4xlarge | LoRA + 4-bit | 4 | Llama-3-8B, Qwen3-8B |
+| 10-14B | ml.g5.8xlarge | LoRA + 4-bit | 4 | Falcon3-10B, DeepSeek-R1-Distill-14B, Phi-4 |
+| 17B | ml.g5.12xlarge | LoRA + 4-bit | 2 | Llama-4-Scout-17B, Llama-4-Maverick-17B |
+| 20-30B | ml.g5.24xlarge | LoRA + MXFP4 | 2 | GPT-OSS-20B, Gemma-3-27B, Qwen3-30B |
+| 100B+ | ml.p4d.24xlarge | LoRA + MXFP4 | 1 | DeepSeek-V3 |
 
 ### Training Speed Tips
 
