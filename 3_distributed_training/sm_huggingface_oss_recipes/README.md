@@ -50,8 +50,8 @@ The choice between these methods depends on your specific constraints: use LoRA 
 | mistralai/Mistral-7B-Instruct-v0.3 | ✅ [QLoRA](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/mistralai--Mistral-7B-Instruct-v0.3-Vanilla-Full.yaml) | Flash Attention 2, optimized for efficiency |
 | | | | | |
 | **🤖 OpenAI - Text Generation** | | | | |
-| openai/gpt-oss-20b | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-20b-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | MXFP4 quantization, Flash Attention 3 |
-| openai/gpt-oss-120b | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-120b-Vanilla-QLoRA.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Large scale model, MXFP4 quantization |
+| openai/gpt-oss-20b | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-20b-Vanilla-MXFP4.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | MXFP4 quantization, Flash Attention 3 |
+| openai/gpt-oss-120b | ✅ [QLoRA](sm_code/oss-recipes/openai--gpt-oss-120b-Vanilla-MXFP4.yaml) | ⏳ Coming Soon | ⏳ Coming Soon | Large scale model, MXFP4 quantization |
 | | | | | |
 | **🔮 Qwen (Alibaba) - Text Generation** | | | | |
 | Qwen/Qwen3-8B | ✅ [QLoRA](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-QLoRA.yaml) | ✅ [Spectrum](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-Spectrum.yaml) | ✅ [Full](sm_code/oss-recipes/Qwen--Qwen3-8B-Vanilla-Full.yaml) | Flash Attention 2, 4-bit quantization |
