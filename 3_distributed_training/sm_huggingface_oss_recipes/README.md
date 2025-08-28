@@ -24,6 +24,8 @@ This repository provides a comprehensive framework for model customization on Am
 
 ## Model Customization on Amazon SageMaker AI
 
+![SageMaker Recipe Flow](./media/recipe_flow.jpg)
+
 ### Supervised Fine-Tuning
 
 Supervised Fine-Tuning (SFT) is the process of adapting pre-trained foundation models to specific tasks or domains using labeled datasets. This approach leverages the rich representations learned during pre-training while specializing the model for downstream applications. Our framework supports three distinct SFT methodologies, each optimized for different resource constraints and performance requirements.
