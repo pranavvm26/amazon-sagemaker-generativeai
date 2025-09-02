@@ -17,7 +17,7 @@ NUM_GPUS=""
 CONFIG_PATH=""
 REQUIREMENTS_FILE="./requirements.txt"
 ACCELERATE_CONFIG="accelerate_configs/ds_zero3.yaml"
-TRAINING_SCRIPT="run_sft.py"
+TRAINING_SCRIPT="run_sft_hf.py"
 
 # Color codes for output
 readonly RED='\033[0;31m'
