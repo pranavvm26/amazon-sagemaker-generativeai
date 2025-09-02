@@ -347,6 +347,46 @@ We welcome contributions! Please:
 3. Update documentation and model support tables
 4. Follow the existing YAML structure
 
+
+## Running Locally on an EC2/Self-Managed Instance
+
+Start by updating the local instance (assuming a fresh VM),
+
+```bash
+
+sudo apt-get update -y && sudo apt-get install python3-pip python3-venv -y
+
+```
+
+Use uv (recommended to create a virtual env and install packages).
+
+```bash
+# install uv package and env manager
+sudo pip install uv
+
+# create a py3.XX environment
+uv venv py311 --python 3.11
+
+# activate venv
+source py311/bin/activate
+```
+
+Clone git repo and navigate to the recipes repository
+
+```bash
+# clone repository
+git clone https://github.com/aws-samples/amazon-sagemaker-generativeai.git
+
+# navigate distributed training repository
+cd amazon-sagemaker-generativeai/3_distributed_training/sm_huggingface_oss_recipes/
+```
+
+Run distributed training using Accelerate orchestrator
+
+```bash
+SM_MODEL_DIR="/home/ubuntu/amazon-sagemaker-generativeai/3_distributed_training/sm_huggingface_oss_recipes/models" accelerate launch --config_file accelerate_configs/ds_zero3.yaml --num_processes 1 run_sft_hf.py --config recipes/meta-llama--Meta-Llama-3-8B-Instruct-qlora.yaml
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
