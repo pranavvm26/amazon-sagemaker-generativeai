@@ -23,6 +23,7 @@ from peft import AutoPeftModelForCausalLM, PeftModel, PeftConfig
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    AutoProcessor,
     BitsAndBytesConfig,
     Mxfp4Config,
     PreTrainedModel,
@@ -41,7 +42,29 @@ from trl import (
 
 if is_liger_kernel_available():
     from liger_kernel.transformers import AutoLigerKernelForCausalLM
+import base64
+import io
+from PIL import Image
 
+
+def process_vision_info(messages: list[dict]) -> list[Image.Image]:
+    image_inputs = []
+    for msg in messages:
+        content = msg.get("content", [])
+        if not isinstance(content, list):
+            content = [content]
+
+        for element in content:
+            # We only care about TRL-style multimodal entries
+            if isinstance(element, dict) and element.get("type") == "image_url":
+                url = element.get("image_url", {}).get("url", None)
+                if url and url.startswith("data:image"):
+                    # strip the prefix "data:image/png;base64,"
+                    b64_data = url.split(",")[1]
+                    img_bytes = base64.b64decode(b64_data)
+                    image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+                    image_inputs.append(image)
+    return image_inputs
 
 
 # Configure logging
@@ -70,6 +93,9 @@ class ScriptArguments:
     
     tokenizer_name_or_path: Optional[str] = None
     """Path to tokenizer or HuggingFace tokenizer identifier. If None, uses model tokenizer."""
+
+    processor_name_or_path: Optional[str] = None
+    """Path to processor or HuggingFace processor identifier. If None, uses model processor."""
     
     spectrum_config_path: Optional[str] = None
     """Path to YAML config file specifying which parameters to unfreeze for Spectrum training."""
@@ -245,6 +271,29 @@ def setup_tokenizer(script_args: ScriptArguments, model_args: ModelConfig) -> Pr
     return tokenizer
 
 
+def setup_processor(script_args: ScriptArguments, model_args: ModelConfig):
+    """
+    Load and configure the processors.
+    
+    Args:
+        script_args: Script arguments containing tokenizer configuration
+        model_args: Model arguments containing model configuration
+        
+    Returns:
+        Configured processor
+    """
+    processor_name = script_args.processor_name_or_path or model_args.model_name_or_path
+    
+    logger.info(f"Loading processor from {processor_name}")
+    processor = AutoProcessor.from_pretrained(
+        processor_name,
+        revision=model_args.model_revision,
+        trust_remote_code=model_args.trust_remote_code,
+    )
+    
+    return processor
+
+
 def create_model_kwargs(model_args: ModelConfig, training_args: SFTConfig, script_args: ScriptArguments) -> Dict[str, Any]:
     """
     Create model loading arguments based on configuration.
@@ -268,7 +317,7 @@ def create_model_kwargs(model_args: ModelConfig, training_args: SFTConfig, scrip
         'trust_remote_code': model_args.trust_remote_code,
         'attn_implementation': model_args.attn_implementation,
         'torch_dtype': torch_dtype,
-        'use_cache': not training_args.gradient_checkpointing,
+        # 'use_cache': not training_args.gradient_checkpointing,
     }
     
     # Set low_cpu_mem_usage based on DeepSpeed usage
@@ -450,7 +499,13 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     train_dataset, eval_dataset = load_datasets(script_args)
     
     # Setup tokenizer
-    tokenizer = setup_tokenizer(script_args, model_args)
+    tokenizer_or_processor = None
+    if script_args.tokenizer_name_or_path:
+        tokenizer_or_processor = setup_tokenizer(script_args, model_args)
+    elif script_args.processor_name_or_path:
+        tokenizer_or_processor = setup_processor(script_args, model_args)
+    else:
+        assert tokenizer_or_processor is not None, "please specify `tokenizer_name_or_path` (text) or `processor_name_or_path` (vision)"
     
     # Configure PEFT if needed
     peft_config = None
@@ -467,14 +522,48 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     model_kwargs = create_model_kwargs(model_args, training_args, script_args)
     model = load_model(model_args, training_args, script_args, model_kwargs)
     model = configure_model_for_training(model, script_args)
+
+    def collate_fn(examples):
+        # Convert chat messages to text template
+        texts = [
+            tokenizer_or_processor.apply_chat_template(
+                example["messages"], tokenize=False, add_generation_prompt=False
+            ).strip()
+            for example in examples
+        ]
+    
+        # Extract images from messages (always multimodal-safe)
+        images = [process_vision_info(example["messages"]) for example in examples]
+    
+        # Tokenize texts and images
+        batch = tokenizer_or_processor(
+            images=images, text=texts, return_tensors="pt", padding=True
+        )
+    
+        # Prepare labels (mask padding + special image tokens)
+        labels = batch["input_ids"].clone()
+        labels[labels == tokenizer_or_processor.tokenizer.pad_token_id] = -100
+    
+        # Mask image tokens (boi/eoi etc.)
+        image_token_ids = [
+            tokenizer_or_processor.tokenizer.convert_tokens_to_ids(tok)
+            for tok in tokenizer_or_processor.tokenizer.special_tokens_map.values()
+            if "image" in tok.lower() or "boi" in tok.lower() or "eoi" in tok.lower()
+        ]
+        for tok_id in image_token_ids:
+            labels[labels == tok_id] = -100
+    
+        batch["labels"] = labels
+        return batch
     
     # Initialize trainer
     trainer = SFTTrainer(
         model=model,
         args=training_args,
+        data_collator=collate_fn if script_args.processor_name_or_path else None,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,  # Add eval dataset
-        processing_class=tokenizer,
+        processing_class=tokenizer_or_processor,
         peft_config=peft_config,
     )
     
