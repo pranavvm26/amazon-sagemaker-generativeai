@@ -1,6 +1,6 @@
-torch==2.7.1
-torchvision==0.22.1 
-torchaudio==2.7.1
+torch
+torchvision
+torchaudio
 transformers>=4.55.0
 kernels>=0.9.0
 datasets==4.0.0
@@ -12,7 +12,7 @@ hf-transfer==0.1.8
 hf_xet
 tensorboard 
 liger-kernel==0.6.1
-deepspeed==0.17.4
+deepspeed==0.16.4
 lm-eval[api]==0.4.9
 Pillow
 mlflow

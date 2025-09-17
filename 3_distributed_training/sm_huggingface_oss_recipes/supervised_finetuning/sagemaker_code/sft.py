@@ -12,6 +12,7 @@ This script supports:
 import logging
 import os
 import re
+import soundfile as sf
 from dataclasses import dataclass
 from datetime import datetime
 from distutils.util import strtobool
@@ -28,7 +29,8 @@ from transformers import (
     Mxfp4Config,
     PreTrainedModel,
     PreTrainedTokenizer,
-    set_seed
+    set_seed,
+    Qwen2AudioForConditionalGeneration
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import is_liger_kernel_available
@@ -65,6 +67,25 @@ def process_vision_info(messages: list[dict]) -> list[Image.Image]:
                     image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
                     image_inputs.append(image)
     return image_inputs
+
+
+def process_audio_info(messages):
+    """
+    Extract audio paths from messages and decode into waveform dicts
+    that the processor can consume.
+    """
+    audio_inputs = []
+    for msg in messages:
+        for element in msg.get("content", []):
+            if isinstance(element, dict) and element.get("type") == "audio":
+                # Support either audio_url or audio.path
+                audio_url = element.get("audio_url") or element.get("audio", {}).get("path")
+                if audio_url:
+                    # Strip file:// prefix if present
+                    path = audio_url.replace("file://", "")
+                    array, sr = sf.read(path)
+                    audio_inputs.append({"array": array, "sampling_rate": sr})
+    return audio_inputs
 
 
 # Configure logging
@@ -108,6 +129,9 @@ class ScriptArguments:
 
     use_liger: bool = False
     """Whether to use LigerKernel over AutoClass for loading model."""
+
+    modality_type: Optional[str] = "text"
+    """Type of modality to use during training "video", "image", "audio" or "text" """
 
 def get_checkpoint_path(training_args: SFTConfig) -> Optional[str]:
     """
@@ -372,7 +396,8 @@ def load_model(model_args: ModelConfig, training_args: SFTConfig, script_args: S
             model = AutoLigerKernelForCausalLM.from_pretrained(model_name, **model_kwargs)
         else:
             logger.info("Loading standard model")
-            model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+            model = Qwen2AudioForConditionalGeneration.from_pretrained(model_name, **model_kwargs)
+            # model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
     # Wait for all processes in distributed training
     if hasattr(training_args, 'distributed_state'):
@@ -523,7 +548,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     model = load_model(model_args, training_args, script_args, model_kwargs)
     model = configure_model_for_training(model, script_args)
 
-    def collate_fn(examples):
+    def collate_fn_images(examples):
         # Convert chat messages to text template
         texts = [
             tokenizer_or_processor.apply_chat_template(
@@ -537,7 +562,10 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     
         # Tokenize texts and images
         batch = tokenizer_or_processor(
-            images=images, text=texts, return_tensors="pt", padding=True
+            images=images, 
+            text=texts, 
+            return_tensors="pt", 
+            padding=True
         )
     
         # Prepare labels (mask padding + special image tokens)
@@ -551,6 +579,54 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
             if "image" in tok.lower() or "boi" in tok.lower() or "eoi" in tok.lower()
         ]
         for tok_id in image_token_ids:
+            labels[labels == tok_id] = -100
+    
+        batch["labels"] = labels
+        return batch
+    
+    
+    def collate_fn_audio(examples):
+        # 1. Convert chat messages into text prompts
+        texts = [
+            tokenizer_or_processor.apply_chat_template(
+                example["messages"], tokenize=False, add_generation_prompt=False
+            ).strip()
+            for example in examples
+        ]
+    
+        # 2. Extract audio waveforms for each example
+        audios = [process_audio_info(example["messages"]) for example in examples]
+    
+        # 3. Tokenize text + audio together
+        batch = tokenizer_or_processor(
+            audios=audios,
+            text=texts,
+            return_tensors="pt",
+            padding=True,
+        )
+    
+        # 4. Build labels (mask padding tokens)
+        labels = batch["input_ids"].clone()
+        labels[labels == tokenizer_or_processor.tokenizer.pad_token_id] = -100
+    
+        # 5. Mask audio special tokens (<|audio_bos|>, <|audio_eos|>, etc.)
+        special_tokens = tokenizer_or_processor.tokenizer.special_tokens_map.values()
+    
+        audio_tokens = []
+        for tok in special_tokens:
+            if isinstance(tok, str):
+                audio_tokens.append(tok)
+            elif isinstance(tok, list):
+                audio_tokens.extend(tok)
+    
+        audio_token_ids = [
+            tokenizer_or_processor.tokenizer.convert_tokens_to_ids(tok)
+            for tok in audio_tokens
+            if isinstance(tok, str)
+            and ("audio" in tok.lower() or "bo" in tok.lower() or "eo" in tok.lower())
+        ]
+    
+        for tok_id in audio_token_ids:
             labels[labels == tok_id] = -100
     
         batch["labels"] = labels
