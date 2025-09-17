@@ -49,6 +49,10 @@ import io
 from PIL import Image
 
 
+# here's a list of models that needs its own import from transformers
+EXCEPTION_MODEL_LIST = ["Qwen/Qwen2-Audio-7B-Instruct"]
+
+
 def process_vision_info(messages: list[dict]) -> list[Image.Image]:
     image_inputs = []
     for msg in messages:
@@ -386,18 +390,23 @@ def load_model(model_args: ModelConfig, training_args: SFTConfig, script_args: S
     model_name = model_args.model_name_or_path
     
     if script_args.mxfp4:
-        logger.info("Loading model with MXFP4 - skipping Liger kernel")
+        logger.info("🌱 Loading model with MXFP4 - skipping Liger kernel")
         # MXFP4 doesn't support Liger kernel yet
         model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     else:
         # Use Liger kernel if available and requested
         if script_args.use_liger and is_liger_kernel_available():
-            logger.info("Loading model with Liger kernel optimization")
+            logger.info("🐯 Loading model with Liger kernel optimization")
             model = AutoLigerKernelForCausalLM.from_pretrained(model_name, **model_kwargs)
         else:
-            logger.info("Loading standard model")
-            model = Qwen2AudioForConditionalGeneration.from_pretrained(model_name, **model_kwargs)
-            # model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+            logger.info("↔️ Loading standard model")
+            if model_name in EXCEPTION_MODEL_LIST:
+                if model_name == "Qwen/Qwen2-Audio-7B-Instruct":
+                    model = Qwen2AudioForConditionalGeneration.from_pretrained(model_name, **model_kwargs)
+                else:
+                    raise AssertionError(f"model {model_name} not supported")
+            else:
+                model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
     # Wait for all processes in distributed training
     if hasattr(training_args, 'distributed_state'):
@@ -514,6 +523,9 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     logger.info("=" * 50)
     logger.info("Starting Supervised Fine-Tuning")
     logger.info("=" * 50)
+
+    logger.info(f"\n\n🌀🌀🌀 MODALITY: {script_args.modality_type} 🌀🌀🌀")
+
     
     # Log all parameters
     logger.info(f"Model parameters: {model_args}")
@@ -535,13 +547,26 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     # Configure PEFT if needed
     peft_config = None
     if model_args.use_peft:
-        logger.info("\n\n🪫 ****************** Configuring PEFT (Parameter Efficient Fine-Tuning) ****************** ")
+        logger.info(
+            "\n\n"
+            "🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🪫🔋🪫🔋🪫🪫\n"
+            "🪫   CONFIGURING PEFT    🪫\n"
+            "🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🔋🪫🪫🔋🪫🔋🪫🪫\n"
+        )
+
         peft_config = get_peft_config(model_args)
     else:
         spectrum_bool = False
         if script_args.spectrum_config_path:
             spectrum_bool = True
-        logger.info(f"\n\n🌕 ****************** Running Fine-tuning (Spectrum: {spectrum_bool}) ****************** ")
+        logger.info(
+            "\n\n"
+            "🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟\n"
+            "🌟   RUNNING FINE-TUNING (Spectrum: %s)    🌟\n"
+            "🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟\n"
+            % spectrum_bool
+        )
+
     
     # Load and configure model
     model_kwargs = create_model_kwargs(model_args, training_args, script_args)
@@ -631,12 +656,25 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     
         batch["labels"] = labels
         return batch
+
+    # collate functions are applicable for multi-modal datasets like images/video/audio
+    collator_fn = None
+    if script_args.modality_type == "text":
+        pass
+    elif script_args.modality_type == "image":
+        collator_fn = collate_fn_images
+    elif script_args.modality_type == "video":
+        raise AssertionError(f"current modality {script_args.modality_type} is unsupported!")
+    elif script_args.modality_type == "audio":
+        collator_fn = collate_fn_audio
+    else:
+        raise AssertionError(f"current modality {script_args.modality_type} is unsupported - choose `image`, `video`, `audio` or `text`!")
     
     # Initialize trainer
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        data_collator=collate_fn if script_args.processor_name_or_path else None,
+        data_collator=collator_fn,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,  # Add eval dataset
         processing_class=tokenizer_or_processor,
