@@ -406,6 +406,7 @@ def load_model(model_args: ModelConfig, training_args: SFTConfig, script_args: S
                 else:
                     raise AssertionError(f"model {model_name} not supported")
             else:
+                print(model_name, model_kwargs)
                 model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
     # Wait for all processes in distributed training
