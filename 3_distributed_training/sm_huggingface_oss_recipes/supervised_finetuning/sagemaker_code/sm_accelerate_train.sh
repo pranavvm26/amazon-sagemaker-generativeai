@@ -3,8 +3,8 @@
 # SageMaker Accelerate Training Script
 # Launches distributed fine-tuning using Accelerate + DeepSpeed Zero3
 #
-# Usage: ./sm_accelerate_train.sh --num_process <NUM_GPUS> --config <CONFIG_YAML>
-# Example: ./sm_accelerate_train.sh --num_process 8 --config recipes/llama_sft.yaml
+# Usage: ./sm_accelerate_train.sh --config <CONFIG_YAML>
+# Example: ./sm_accelerate_train.sh --config recipes/llama_sft.yaml
 
 set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
@@ -16,7 +16,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NUM_GPUS=""
 CONFIG_PATH=""
 REQUIREMENTS_FILE="./requirements.txt"
-ACCELERATE_CONFIG="accelerate_configs/ds_zero3.yaml"
+ACCELERATE_CONFIG="configs/accelerate/ds_zero3.yaml"
 TRAINING_SCRIPT="sft.py"
 
 # Color codes for output
@@ -27,48 +27,42 @@ readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
 
 # Logging functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-}
+log_info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error()   { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 
 show_usage() {
     cat << EOF
-Usage: $SCRIPT_NAME --num_process <NUM_GPUS> --config <CONFIG_YAML>
+Usage: $SCRIPT_NAME --config <CONFIG_YAML>
 
 Arguments:
-    --num_process NUM_GPUS    Number of GPU processes for distributed training
     --config CONFIG_YAML      Path to training configuration YAML file
 
 Options:
     --help                    Show this help message
 
 Examples:
-    $SCRIPT_NAME --num_process 8 --config recipes/llama_sft.yaml
-    $SCRIPT_NAME --num_process 4 --config configs/custom_config.yaml
+    $SCRIPT_NAME --config recipes/llama_sft.yaml
+    $SCRIPT_NAME --config configs/custom_config.yaml
 
 Environment Variables:
     REQUIREMENTS_FILE         Path to requirements file (default: ./requirements.txt)
     ACCELERATE_CONFIG         Path to accelerate config (default: accelerate/zero3.yaml)
-    TRAINING_SCRIPT          Path to training script (default: run_sft.py)
+    TRAINING_SCRIPT           Path to training script (default: run_sft.py)
+    SM_NUM_GPUS               Auto-detected GPU count (if set by container)
+
+Auto GPU Detection:
+    Priority:
+      1. --num_process (deprecated, still supported)
+      2. SM_NUM_GPUS environment variable
+      3. nvidia-smi device count
 EOF
 }
 
 validate_file_exists() {
     local file_path="$1"
     local file_description="$2"
-    
     if [[ ! -f "$file_path" ]]; then
         log_error "$file_description not found: $file_path"
         return 1
@@ -78,7 +72,6 @@ validate_file_exists() {
 validate_positive_integer() {
     local value="$1"
     local param_name="$2"
-    
     if ! [[ "$value" =~ ^[1-9][0-9]*$ ]]; then
         log_error "$param_name must be a positive integer, got: $value"
         return 1
@@ -89,21 +82,11 @@ parse_arguments() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --num_process)
-                if [[ -z "${2:-}" ]]; then
-                    log_error "--num_process requires a value"
-                    show_usage
-                    exit 1
-                fi
-                NUM_GPUS="$2"
+                NUM_GPUS="${2:-}"
                 shift 2
                 ;;
             --config)
-                if [[ -z "${2:-}" ]]; then
-                    log_error "--config requires a value"
-                    show_usage
-                    exit 1
-                fi
-                CONFIG_PATH="$2"
+                CONFIG_PATH="${2:-}"
                 shift 2
                 ;;
             --help|-h)
@@ -119,14 +102,34 @@ parse_arguments() {
     done
 }
 
+resolve_num_gpus() {
+    if [[ -n "$NUM_GPUS" ]]; then
+        log_info "Using --num_process=$NUM_GPUS"
+        return
+    fi
+
+    if [[ -n "${SM_NUM_GPUS:-}" ]]; then
+        NUM_GPUS="$SM_NUM_GPUS"
+        log_info "Using SM_NUM_GPUS=$NUM_GPUS"
+        return
+    fi
+
+    if command -v nvidia-smi &> /dev/null; then
+        local detected
+        detected=$(nvidia-smi -L | wc -l)
+        if [[ "$detected" -gt 0 ]]; then
+            NUM_GPUS="$detected"
+            log_info "Detected $NUM_GPUS GPU(s) via nvidia-smi"
+            return
+        fi
+    fi
+
+    log_error "Unable to determine GPU count. Please specify --num_process explicitly."
+    exit 1
+}
+
 validate_inputs() {
     local validation_failed=false
-    
-    # Check required arguments
-    if [[ -z "$NUM_GPUS" ]]; then
-        log_error "--num_process is required"
-        validation_failed=true
-    fi
     
     if [[ -z "$CONFIG_PATH" ]]; then
         log_error "--config is required"
@@ -138,29 +141,34 @@ validate_inputs() {
         exit 1
     fi
     
-    # Validate NUM_GPUS is a positive integer
-    validate_positive_integer "$NUM_GPUS" "--num_process" || exit 1
-    
-    # Validate files exist
+    resolve_num_gpus
+    validate_positive_integer "$NUM_GPUS" "GPU count" || exit 1
+
     validate_file_exists "$CONFIG_PATH" "Configuration file" || exit 1
     validate_file_exists "$TRAINING_SCRIPT" "Training script" || exit 1
     validate_file_exists "$ACCELERATE_CONFIG" "Accelerate configuration" || exit 1
     
-    # Check if requirements file exists (optional)
     if [[ ! -f "$REQUIREMENTS_FILE" ]]; then
         log_warning "Requirements file not found: $REQUIREMENTS_FILE (skipping dependency installation)"
     fi
 }
 
 install_dependencies() {
+    log_info "Ensuring uv package manager is installed..."
+    if ! command -v uv &> /dev/null; then
+        python3 -m pip install --upgrade uv || {
+            log_error "Failed to install uv"
+            exit 1
+        }
+        log_success "uv installed successfully"
+    fi
+
     if [[ -f "$REQUIREMENTS_FILE" ]]; then
-        log_info "Installing Python dependencies from $REQUIREMENTS_FILE..."
-        
-        if ! python3 -m pip install -r "$REQUIREMENTS_FILE"; then
+        log_info "Installing Python dependencies from $REQUIREMENTS_FILE using uv..."
+        if ! uv pip install --system -r "$REQUIREMENTS_FILE"; then
             log_error "Failed to install dependencies from $REQUIREMENTS_FILE"
             exit 1
         fi
-        
         log_success "Dependencies installed successfully"
     else
         log_info "Skipping dependency installation (no requirements file found)"
@@ -169,27 +177,24 @@ install_dependencies() {
 
 check_accelerate_installation() {
     if ! command -v accelerate &> /dev/null; then
-        log_error "accelerate command not found. Please install it with: pip install accelerate"
+        log_error "accelerate command not found. Please install it with: uv pip install --system accelerate"
         exit 1
     fi
-    
     log_info "Accelerate version: $(accelerate --version)"
 }
 
 launch_training() {
-    log_info "Starting distributed training with the following configuration:"
+    log_info "Starting distributed training with:"
     log_info "  - Number of processes: $NUM_GPUS"
     log_info "  - Config file: $CONFIG_PATH"
     log_info "  - Accelerate config: $ACCELERATE_CONFIG"
     log_info "  - Training script: $TRAINING_SCRIPT"
     
-    # Launch training with error handling
     if accelerate launch \
         --config_file "$ACCELERATE_CONFIG" \
         --num_processes "$NUM_GPUS" \
         "$TRAINING_SCRIPT" \
         --config "$CONFIG_PATH"; then
-        
         log_success "Training completed successfully!"
     else
         local exit_code=$?
@@ -202,23 +207,12 @@ main() {
     log_info "Starting SageMaker Accelerate Training Script"
     log_info "Script directory: $SCRIPT_DIR"
     
-    # Parse command line arguments
     parse_arguments "$@"
-    
-    # Validate all inputs
     validate_inputs
-    
-    # Check accelerate installation
-    # check_accelerate_installation
-    
-    # Install dependencies
-    # install_dependencies
-    
-    # Launch training
+    check_accelerate_installation
+    install_dependencies
     launch_training
-    
     log_success "Script execution completed"
 }
 
-# Run main function with all arguments
 main "$@"
