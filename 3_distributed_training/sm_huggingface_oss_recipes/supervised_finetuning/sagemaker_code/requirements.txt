@@ -19,3 +19,5 @@ mlflow
 sagemaker-mlflow==0.1.0
 triton
 git+https://github.com/triton-lang/triton.git@main#subdirectory=python/triton_kernels
+pillow
+timm

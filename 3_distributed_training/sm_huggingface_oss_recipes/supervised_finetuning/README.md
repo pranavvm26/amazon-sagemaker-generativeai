@@ -69,6 +69,7 @@ The choice between these methods depends on your specific constraints: use LoRA 
 | | | | | | |
 | **🦙 Meta (Llama) - Multi-Modal** | | | | | |
 | meta-llama/Llama-3.2-11B-Vision-Instruct | ✅ [QLoRA](sagemaker_code/hf_recipes/meta-llama/Llama-3.2-11B-Vision-Instruct--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/meta-llama/Llama-3.2-11B-Vision-Instruct--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/meta-llama/Llama-3.2-11B-Vision-Instruct--vanilla-full.yaml) | 📓 [Notebook](finetune--meta-llama--Llama-3.2-11B-Vision-Instruct.ipynb) | Vision-language model |
+| meta-llama/Llama-4-Maverick-17B-128E-Instruct | ✅ [QLoRA](sagemaker_code/hf_recipes/meta-llama/Llama-4-Maverick-17B-128E-Instruct--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/meta-llama/Llama-4-Maverick-17B-128E-Instruct--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/meta-llama/Llama-4-Maverick-17B-128E-Instruct--vanilla-full.yaml) | 📓 [Notebook](finetune--meta-llama--Llama-4-Maverick-17B-128E-Instruct.ipynb) | MoE vision-language model, 128 experts |
 | | | | | | |
 | **🤖 OpenAI - Text Generation** | | | | | |
 | openai/gpt-oss-20b | ✅ [QLoRA](sagemaker_code/hf_recipes/openai/gpt-oss-20b--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/openai/gpt-oss-20b--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/openai/gpt-oss-20b--vanilla-full.yaml) | 📓 [Notebook](finetune--openai--gpt-oss-20b.ipynb) | 4-bit quantization, optimized for efficiency |
@@ -82,8 +83,19 @@ The choice between these methods depends on your specific constraints: use LoRA 
 | Qwen/Qwen2-Audio-7B-Instruct | ✅ [QLoRA](sagemaker_code/hf_recipes/Qwen/Qwen2-Audio-7B-Instruct-vanilla-peft-qlora.yaml) | ⏳ Coming Soon | ✅ [Full](sagemaker_code/hf_recipes/Qwen/Qwen2-Audio-7B-Instruct-vanilla-full.yaml) | 📓 [Notebook](finetune--Qwen--Qwen2-Audio-7B-Instruct.ipynb) | Audio-language model |
 | | | | | | |
 | **🧠 DeepSeek - Text Generation** | | | | | |
-| deepseek-ai/DeepSeek-R1-0528 | ✅ [QLoRA](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-full.yaml) | - | Advanced reasoning model |
+| deepseek-ai/DeepSeek-R1-0528 | ✅ [QLoRA](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-0528--vanilla-full.yaml) | 📓 [Notebook](finetune--deepseek-ai--DeepSeek-R1-0528.ipynb) | Advanced reasoning model |
 | deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B | ✅ [QLoRA](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B--vanilla-full.yaml) | 📓 [Notebook](finetune--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B.ipynb) | Compact reasoning model, distilled from R1 |
+| | | | | | |
+| **🔬 Microsoft - Text Generation** | | | | | |
+| microsoft/Phi-3-mini-128k-instruct | ✅ [QLoRA](sagemaker_code/hf_recipes/microsoft/Phi-3-mini-128k-instruct--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/microsoft/Phi-3-mini-128k-instruct--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/microsoft/Phi-3-mini-128k-instruct--vanilla-full.yaml) | 📓 [Notebook](finetune--microsoft--Phi-3-mini-128k-instruct.ipynb) | Compact model, 128K context window |
+| microsoft/phi-4 | ✅ [QLoRA](sagemaker_code/hf_recipes/microsoft/phi-4--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/microsoft/phi-4--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/microsoft/phi-4--vanilla-full.yaml) | 📓 [Notebook](finetune--microsoft--phi-4.ipynb) | Advanced reasoning and coding capabilities |
+| | | | | | |
+| **🔬 Microsoft - Multi-Modal** | | | | | |
+| microsoft/Florence-2-large | ✅ [QLoRA](sagemaker_code/hf_recipes/microsoft/Florence-2-large--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/microsoft/Florence-2-large--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/microsoft/Florence-2-large--vanilla-full.yaml) | 📓 [Notebook](finetune--microsoft--Florence-2-large.ipynb) | Vision-language model, OCR and analysis |
+| | | | | | |
+| **🌟 Google - Text Generation** | | | | | |
+| google/gemma-2b | ✅ [QLoRA](sagemaker_code/hf_recipes/google/gemma-2b--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/google/gemma-2b--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/google/gemma-2b--vanilla-full.yaml) | 📓 [Notebook](finetune--google--gemma-2b.ipynb) | Efficient small model |
+| google/gemma-3-27b-it | ✅ [QLoRA](sagemaker_code/hf_recipes/google/gemma-3-27b-it--vanilla-peft-qlora.yaml) | ✅ [Spectrum](sagemaker_code/hf_recipes/google/gemma-3-27b-it--vanilla-spectrum.yaml) | ✅ [Full](sagemaker_code/hf_recipes/google/gemma-3-27b-it--vanilla-full.yaml) | 📓 [Notebook](finetune--google--gemma-3-27b-it.ipynb) | Latest Gemma model, instruction-tuned |
 
 ### Preference Optimization
 
@@ -333,10 +345,14 @@ processor_name_or_path: meta-llama/Llama-3.2-11B-Vision-Instruct
 | Model Size | Recommended Instance | Training Method | Batch Size | Example Models |
 |------------|---------------------|-----------------|------------|----------------|
 | 1.5B | ml.g5.xlarge | LoRA + 4-bit | 16 | DeepSeek-R1-Distill-Qwen-1.5B |
-| 3B | ml.g5.2xlarge | LoRA + 4-bit | 8 | Llama-3.2-3B-Instruct, Qwen2.5-3B-Instruct |
-| 7B | ml.g5.4xlarge | LoRA + 4-bit | 4 | Qwen2-Audio-7B-Instruct |
+| 2B | ml.g5.xlarge | LoRA + 4-bit | 8 | Gemma-2B |
+| 3B | ml.g5.2xlarge | LoRA + 4-bit | 8 | Llama-3.2-3B-Instruct, Qwen2.5-3B-Instruct, Phi-3-mini-128k-instruct |
+| 7B | ml.g5.4xlarge | LoRA + 4-bit | 4 | Qwen2-Audio-7B-Instruct, Florence-2-large |
 | 11B | ml.g5.8xlarge | LoRA + 4-bit | 4 | Llama-3.2-11B-Vision-Instruct |
+| 14B | ml.g5.12xlarge | LoRA + 4-bit | 2 | Phi-4 |
+| 17B (MoE) | ml.g5.12xlarge | LoRA + 4-bit | 2 | Llama-4-Maverick-17B-128E-Instruct |
 | 20B | ml.g5.12xlarge | LoRA + 4-bit | 2 | GPT-OSS-20B |
+| 27B | ml.g5.24xlarge | LoRA + 4-bit | 1 | Gemma-3-27B-IT |
 | 32B | ml.g5.24xlarge | LoRA + 4-bit | 2 | QwQ-32B |
 | 70B | ml.p4d.24xlarge | LoRA + 4-bit | 1 | Llama-3.3-70B-Instruct |
 | 120B+ | ml.p4d.24xlarge | LoRA + 4-bit | 1 | GPT-OSS-120B, DeepSeek-R1-0528 |
@@ -396,14 +412,32 @@ logging_steps: 5
 
 The repository includes comprehensive Jupyter notebooks demonstrating end-to-end fine-tuning workflows:
 
+### Meta (Llama) Models
 - **[Meta Llama 3.2 3B Instruct](finetune--meta-llama--Llama-3.2-3B-Instruct.ipynb)**: Compact text generation model
 - **[Meta Llama 3.2 11B Vision Instruct](finetune--meta-llama--Llama-3.2-11B-Vision-Instruct.ipynb)**: Vision-language model
 - **[Meta Llama 3.3 70B Instruct](finetune--meta-llama--Llama-3.3-70B-Instruct.ipynb)**: Large-scale text generation
+- **[Meta Llama 4 Maverick 17B 128E Instruct](finetune--meta-llama--Llama-4-Maverick-17B-128E-Instruct.ipynb)**: MoE vision-language model
+
+### OpenAI Models
 - **[OpenAI GPT-OSS 20B](finetune--openai--gpt-oss-20b.ipynb)**: Mid-scale efficient model
 - **[OpenAI GPT-OSS 120B](finetune--openai--gpt-oss-120b.ipynb)**: Large-scale model
+
+### Qwen (Alibaba) Models
 - **[Qwen QwQ 32B](finetune--Qwen--QwQ-32B.ipynb)**: Reasoning-focused model
 - **[Qwen2 Audio 7B Instruct](finetune--Qwen--Qwen2-Audio-7B-Instruct.ipynb)**: Audio-language model
+
+### DeepSeek Models
+- **[DeepSeek R1 0528](finetune--deepseek-ai--DeepSeek-R1-0528.ipynb)**: Advanced reasoning model
 - **[DeepSeek R1 Distill 1.5B](finetune--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B.ipynb)**: Compact reasoning model
+
+### Microsoft Models
+- **[Microsoft Phi-3 Mini 128K Instruct](finetune--microsoft--Phi-3-mini-128k-instruct.ipynb)**: Compact model with extended context
+- **[Microsoft Phi-4](finetune--microsoft--phi-4.ipynb)**: Advanced reasoning and coding model
+- **[Microsoft Florence-2 Large](finetune--microsoft--Florence-2-large.ipynb)**: Vision-language model for OCR and analysis
+
+### Google Models
+- **[Google Gemma 2B](finetune--google--gemma-2b.ipynb)**: Efficient small model
+- **[Google Gemma 3 27B IT](finetune--google--gemma-3-27b-it.ipynb)**: Latest instruction-tuned Gemma model
 
 Each notebook provides:
 - SageMaker setup and configuration
